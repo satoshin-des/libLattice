@@ -25,6 +25,7 @@ typedef struct _lattice {
 
 void print(lattice b, char* flag);
 lattice random_lattice(int nrows, int ncols);
+int *coef2lat(int* v, lattice b);
 lattice GSO(lattice b);
 long double vol(lattice b);
 lattice LLL(lattice b, const double d);

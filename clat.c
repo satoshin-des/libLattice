@@ -86,7 +86,13 @@ lattice random_lattice(int nrows, int ncols){
             b.basis[i][0] = rand() % 100;
         }
     }
+    b = GSO(b);
     return b;
+}
+
+
+int *coef2lat(int* v, lattice b){
+    int *x = (int *)malloc(b.nrows * sizeof(int));
 }
 
 
@@ -218,7 +224,7 @@ int *ENUM(long double** mu, long double* B, const int n, const double R) {
         rho[k] = rho[k + 1] + tmp * B[k];
         if (rho[k] <= R) {
             if (k == 0){
-                //free(r); free(w); free(c); free(rho); free(sigma);
+                free(r); free(w); free(c); free(rho); free(sigma);
                 return v;
             }else{
                 --k;
@@ -228,15 +234,13 @@ int *ENUM(long double** mu, long double* B, const int n, const double R) {
                 v[k] = round(c[k]);
                 w[k] = 1; // 小さいやつが見つかったら、変分を元に戻す
             }
-        }
-        else {
+        }else{
             ++k;
             if (k == n) {
-                //free(r); free(w); free(c); free(rho); free(sigma);
+                free(r); free(w); free(c); free(rho); free(sigma);
                 free(v); v = NULL;
                 return v;
-            }
-            else {
+            }else{
                 r[k] = k;
                 if (k >= last_nonzero) {
                     last_nonzero = k;
@@ -260,6 +264,9 @@ int *enumerate(long double **mu, long double *B, const int n) {
     for (double R = B[0];; R *= 0.99) {
         for(i = 0; i < n; ++i) pre_enum_v[i] = enum_v[i];
         enum_v = ENUM(mu, B, n, R);
-        if (enum_v == NULL) return pre_enum_v;
+        if (enum_v == NULL){
+            free(enum_v);
+            return pre_enum_v;
+        }
     }
 }
