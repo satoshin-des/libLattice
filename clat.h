@@ -1,6 +1,18 @@
+/**
+ * @file clat.h
+ * @author Arata Sato (23lc002y@rikkyo.ac.jp)
+ * @brief 
+ * @version 0.1
+ * @date 2024-10-08
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
+#ifndef CLAT_H
+#define CLAT_H
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 
 typedef struct _lattice {
     int nrows;
@@ -11,16 +23,9 @@ typedef struct _lattice {
     long double **mu;
 } lattice;
 
+void print(lattice b, char* flag);
+lattice random_lattice(int nrows, int ncols);
+lattice GSO(lattice b);
+lattice LLL(lattice b, const double d);
 
-lattice random_lattice(int nrows, int ncols){
-    lattice b;
-    srand((unsigned int)time(NULL));
-    b.nrows = nrows;
-    b.ncols = ncols;
-    b.basis = (long **)malloc(nrows * sizeof(long *));
-    for(int i = 0, j; i < nrows; ++i){
-        b.basis[i] = (long *)malloc(ncols * sizeof(long));
-        for(j = 0; j < ncols; ++j)
-            b.basis[i][j] = rand();
-    }
-}
+#endif
