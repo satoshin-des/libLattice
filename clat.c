@@ -59,7 +59,7 @@ void print(lattice b, char* flag){
             puts("");
         }
     }else{
-        printf("Flag erroe: flag %s is not defined.\n", flag);
+        printf("Flag error: flag %s is not defined.\n", flag);
     }
 }
 
