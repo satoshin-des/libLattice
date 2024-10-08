@@ -26,6 +26,9 @@ typedef struct _lattice {
 void print(lattice b, char* flag);
 lattice random_lattice(int nrows, int ncols);
 lattice GSO(lattice b);
+long double vol(lattice b);
 lattice LLL(lattice b, const double d);
+int *ENUM(long double** mu, long double* B, const int n, const double R);
+int *enumerate(long double **mu, long double *B, const int n);
 
 #endif

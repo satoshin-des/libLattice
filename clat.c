@@ -34,9 +34,12 @@ double dot_int_dbl(long *x, long double *y, const int n){
     return s;
 }
 
-/// @brief The function ```print``` prints basis 
-/// @param b 
-/// @param flag 
+/**
+ * @brief Prints lattice information.
+ * 
+ * @param b 
+ * @param flag 
+ */
 void print(lattice b, char* flag){
     if(b.nrows == 0 || b.ncols == 0){
         puts("Lattice initialization error: nrows or ncols is undefined.");
@@ -63,10 +66,13 @@ void print(lattice b, char* flag){
     }
 }
 
-/// @brief The function ```random_lattice``` generates random ```nrows```-dimensional lattice basis.
-/// @param nrows Rank of lattice
-/// @param ncols 
-/// @return 
+/**
+ * @brief Generates random ```nrows```-dimensional lattice basis.
+ * 
+ * @param nrows 
+ * @param ncols 
+ * @return lattice 
+ */
 lattice random_lattice(int nrows, int ncols){
     lattice b;
     srand((unsigned int)time(NULL));
@@ -113,6 +119,20 @@ lattice GSO(lattice b){
 }
 
 
+/**
+ * @brief Computes volume (or determinat) of lattice
+ * 
+ * @param b lattice basis
+ * @return long double 
+ */
+long double vol(lattice b){
+    long double p = 1.0;
+    b = GSO(b);
+    for(int i = 0; i < b.nrows; ++i) p *= b.B[i];
+    return sqrt(p);
+}
+
+
 void SizeReduce(long **b, long double **mu, const int i, const int j, const int m){
     int k;
     if(mu[i][j] > 0.5 || mu[i][j] < -0.5){
@@ -124,12 +144,11 @@ void SizeReduce(long **b, long double **mu, const int i, const int j, const int 
 
 
 /**
- * @brief 
+ * @brief LLL-reduces the lattice basis ``b``.
  * 
- * @param b 
- * @param d 
- * @param n 
- * @param m 
+ * @param b lattice basis
+ * @param d reduction parameter
+ * @return lattice
  */
 lattice LLL(lattice b, const double d){
     double nu, BB, C, t;
@@ -157,4 +176,90 @@ lattice LLL(lattice b, const double d){
         }else ++k;
     }
     return b;
+}
+
+/**
+ * @brief Enumerates a lattice vector whose squared norm is shorter than ``R``.
+ * 
+ * @param mu 
+ * @param B 
+ * @param n 
+ * @param R 
+ * @return int* 
+ */
+int *ENUM(long double** mu, long double* B, const int n, const double R) {
+    int n1 = n + 1;
+    int i, j, *r, *w, *v;
+    double tmp;
+    long double *c, *rho, **sigma;
+
+    r = (int *)malloc(n1 * sizeof(int));
+    w = (int *)malloc(n * sizeof(int));
+    v = (int *)malloc(n * sizeof(int));
+    c = (long double *)malloc(n * sizeof(long double));
+    rho = (long double *)malloc(n1 * sizeof(long double));
+    sigma = (long double **)malloc(n1 * sizeof(long double *));
+    for (i = 0; i < n; ++i){
+        r[i] = i;
+        w[i] = v[i] = 0;
+        c[i] = rho[i] = 0;
+        sigma[i] = (long double *)malloc(n * sizeof(long double));
+        for(j = 0; j < n; ++j) sigma[i][j] = 0;
+    }
+    v[0] = 1;
+    r[n] = 0;
+    rho[n] = 0;
+    sigma[n] = (long double *)malloc(n * sizeof(long double));
+    for(j = 0; j < n; ++j) sigma[n][j] = 0;
+
+    for (int k = 0, last_nonzero = 0; ;) {
+        printf("%d\n", k);
+        tmp = c[k] - v[k]; tmp *= tmp;
+        rho[k] = rho[k + 1] + tmp * B[k];
+        if (rho[k] <= R) {
+            if (k == 0){
+                //free(r); free(w); free(c); free(rho); free(sigma);
+                return v;
+            }else{
+                --k;
+                r[k] = (r[k] > r[k + 1] ? r[k]: r[k + 1]);
+                for (i = r[k]; i > k; --i) sigma[i][k] = sigma[i + 1][k] + mu[i][k] * v[i];
+                c[k] = -sigma[k + 1][k];
+                v[k] = round(c[k]);
+                w[k] = 1; // 小さいやつが見つかったら、変分を元に戻す
+            }
+        }
+        else {
+            ++k;
+            if (k == n) {
+                //free(r); free(w); free(c); free(rho); free(sigma);
+                free(v); v = NULL;
+                return v;
+            }
+            else {
+                r[k] = k;
+                if (k >= last_nonzero) {
+                    last_nonzero = k;
+                    ++v[k];
+                }
+                else {
+                    if(v[k] > c[k]) v[k] -= w[k]; else v[k] += w[k];
+                    ++w[k];
+                }
+            }
+        }
+    }
+}
+
+
+int *enumerate(long double **mu, long double *B, const int n) {
+    int i, *enum_v, *pre_enum_v;
+    enum_v = (int *)malloc(n * sizeof(int));
+    pre_enum_v = (int *)malloc(n * sizeof(int));
+    for(i = 0; i < n; ++i) enum_v[i] = pre_enum_v[i] = 0;
+    for (double R = B[0];; R *= 0.99) {
+        for(i = 0; i < n; ++i) pre_enum_v[i] = enum_v[i];
+        enum_v = ENUM(mu, B, n, R);
+        if (enum_v == NULL) return pre_enum_v;
+    }
 }
