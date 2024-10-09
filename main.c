@@ -14,7 +14,7 @@ int main(){
     puts("");
 
     puts("\nDeepLLL-reduced basis");
-    b = DeepLLL(b, 0.99);
+    b = BKZ(b, 5, 0.99, 10);
     print(b, "basis");
     return 0;
 }
