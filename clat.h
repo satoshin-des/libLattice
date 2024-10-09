@@ -28,7 +28,10 @@ lattice random_lattice(int nrows, int ncols);
 int *coef2lat(int* v, lattice b);
 lattice GSO(lattice b);
 long double vol(lattice b);
-lattice LLL(lattice b, const double d);
+lattice LLL(lattice b, const float d);
+lattice DeepLLL(lattice b, const float d);
+lattice PotLLL(lattice b, const float d);
+lattice BKZ(lattice b, const int beta, const float d, const int lp);
 int *ENUM(long double** mu, long double* B, const int n, const double R);
 int *enumerate(long double **mu, long double *B, const int n);
 

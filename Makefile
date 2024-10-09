@@ -6,4 +6,4 @@ TARGET1: clat.c
 	${CC} -Warray-bounds -shared -o libclat.so -c clat.c -lm
 
 TARGET2: main.c
-	${CC} -Warray-bounds -o main main.c -L. -lclat -lm
+	${CC} -Warray-bounds -o main.exe main.c -L. -lclat -lm

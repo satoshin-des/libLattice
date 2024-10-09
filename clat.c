@@ -33,6 +33,142 @@ double dot_int_dbl(long *x, long double *y, const int n){
     for(int i = 0; i < n; ++i) s += y[i] * x[i];
     return s;
 }
+long dot_int_int(long *x, long *y, const int n){
+    long s = 0;
+    for(int i = 0; i < n; ++i) s += y[i] * x[i];
+    return s;
+}
+
+/**
+ * @brief Size-reduces lattice basis and updates GSO-information.
+ * 
+ * @param b lattice basis
+ * @param mu GSO-coefficient matrix
+ * @param i 
+ * @param j 
+ * @param m 
+ */
+void SizeReduce(long **b, long double **mu, const int i, const int j, const int m){
+    if(mu[i][j] > 0.5 || mu[i][j] < -0.5){
+        int k;
+        const int q = round(mu[i][j]);
+        for(k = 0; k < m; ++k) b[i][k] -= q * b[j][k];
+        for(k = 0; k <= j; ++k) mu[i][k] -= mu[j][k] * q;
+    }
+}
+
+lattice _LLL(lattice b, const float d, const int start, const int end){
+    double nu, BB, C, t;
+    int n = end - start + 1;
+    b = GSO(b);
+    
+    for(int k = 1, tmp, i, j, h; k < n;){
+        h = k - 1;
+        for(j = h; j > -1; --j) SizeReduce(b.basis, b.mu, k, j, b.ncols);
+
+        if(k > 0 && b.B[k] < (d - b.mu[k][h] * b.mu[k][h]) * b.B[h]){
+            for(i = 0; i < b.ncols; ++i){tmp = b.basis[h][i]; b.basis[h][i] = b.basis[k][i]; b.basis[k][i] = tmp;}
+            
+            nu = b.mu[k][h]; BB = b.B[k] + nu * nu * b.B[h]; C = 1.0 / BB;
+            b.mu[k][h] = nu * b.B[h] * C; b.B[k] *= b.B[h] * C; b.B[h] = BB;
+
+            for(i = 0; i < h; ++i){
+                t = b.mu[h][i]; b.mu[h][i] = b.mu[k][i]; b.mu[k][i] = t;
+            }
+            for(i = k + 1; i < n; ++i){
+                t = b.mu[i][k]; b.mu[i][k] = b.mu[i][h] - nu * t;
+                b.mu[i][h] = t + b.mu[k][h] * b.mu[i][k];
+            }
+            
+            k = h;
+        }else ++k;
+    }
+    return b;
+}
+
+int *_ENUM(long double** mu, long double* B, const double R, const int start, const int end) {
+    int n = end - start + 1;
+    int n1 = n + 1;
+    int i, j, *r, *w, *v;
+    double tmp;
+    long double *c, *rho, **sigma;
+
+    r = (int *)malloc(n1 * sizeof(int));
+    w = (int *)malloc(n * sizeof(int));
+    v = (int *)malloc(n * sizeof(int));
+    c = (long double *)malloc(n * sizeof(long double));
+    rho = (long double *)malloc(n1 * sizeof(long double));
+    sigma = (long double **)malloc(n1 * sizeof(long double *));
+    for (i = 0; i < n; ++i){
+        r[i] = i;
+        c[i] = rho[i] = w[i] = v[i] = 0;
+        sigma[i] = (long double *)malloc(n * sizeof(long double));
+        for(j = 0; j < n; ++j) sigma[i][j] = 0;
+    }
+    v[0] = 1;
+    rho[n] = r[n] = 0;
+    sigma[n] = (long double *)malloc(n * sizeof(long double));
+    for(j = 0; j < n; ++j) sigma[n][j] = 0;
+
+    for (int k = 0, last_nonzero = 0; ;) {
+        tmp = c[k] - v[k]; tmp *= tmp;
+        rho[k] = rho[k + 1] + tmp * B[k + start];
+        if (rho[k] <= R) {
+            if (k == 0){
+                free(r); free(w); free(c); free(rho); free(sigma);
+                return v;
+            }else{
+                --k;
+                r[k] = (r[k] > r[k + 1] ? r[k]: r[k + 1]);
+                for (i = r[k]; i > k; --i) sigma[i][k] = sigma[i + 1][k] + mu[i + start][k + start] * v[i];
+                c[k] = -sigma[k + 1][k];
+                v[k] = round(c[k]);
+                w[k] = 1;
+            }
+        }else{
+            ++k;
+            if (k == n) {
+                free(r); free(w); free(c); free(rho); free(sigma);
+                free(v); v = NULL;
+                return v;
+            }else{
+                r[k] = k;
+                if (k >= last_nonzero) {
+                    last_nonzero = k;
+                    ++v[k];
+                }
+                else {
+                    if(v[k] > c[k]) v[k] -= w[k]; else v[k] += w[k];
+                    ++w[k];
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @brief 
+ * 
+ * @param mu 
+ * @param B 
+ * @param n 
+ * @return int* 
+ */
+int *_enumerate(long double **mu, long double *B, const int start, const int end) {
+    int i, *enum_v, *pre_enum_v, n = end - start + 1;
+    enum_v = (int *)malloc(n * sizeof(int));
+    pre_enum_v = (int *)malloc(n * sizeof(int));
+    for(i = 0; i < n; ++i) enum_v[i] = pre_enum_v[i] = 0;
+    for (double R = B[start];; R *= 0.99) {
+        for(i = 0; i < n; ++i) pre_enum_v[i] = enum_v[i];
+        enum_v = _ENUM(mu, B, R, start, end);
+        if (enum_v == NULL){
+            free(enum_v);
+            return pre_enum_v;
+        }
+    }
+}
+
 
 /**
  * @brief Prints lattice information.
@@ -90,11 +226,21 @@ lattice random_lattice(int nrows, int ncols){
     return b;
 }
 
-
+/**
+ * @brief Converts coefficient vector to lattice vector
+ * 
+ * @param v 
+ * @param b 
+ * @return int* 
+ */
 int *coef2lat(int* v, lattice b){
-    int *x = (int *)malloc(b.nrows * sizeof(int));
+    int *x = (int *)malloc(b.nrows * sizeof(int)), i, j;
+    for(i = 0; i < b.nrows; ++i){
+        x[i] = 0;
+        for(j = 0; j < b.ncols; ++j) x[i] += v[j] * b.basis[j][i];
+    }
+    return x;
 }
-
 
 /**
  * @brief The function ```GSO``` computes GSO-informations of lattice basis ```b.basis```.
@@ -124,7 +270,6 @@ lattice GSO(lattice b){
     return b;
 }
 
-
 /**
  * @brief Computes volume (or determinat) of lattice
  * 
@@ -138,17 +283,6 @@ long double vol(lattice b){
     return sqrt(p);
 }
 
-
-void SizeReduce(long **b, long double **mu, const int i, const int j, const int m){
-    int k;
-    if(mu[i][j] > 0.5 || mu[i][j] < -0.5){
-        const int q = round(mu[i][j]);
-        for(k = 0; k < m; ++k) b[i][k] -= q * b[j][k];
-        for(k = 0; k <= j; ++k) mu[i][k] -= mu[j][k] * q;
-    }
-}
-
-
 /**
  * @brief LLL-reduces the lattice basis ``b``.
  * 
@@ -156,7 +290,7 @@ void SizeReduce(long **b, long double **mu, const int i, const int j, const int 
  * @param d reduction parameter
  * @return lattice
  */
-lattice LLL(lattice b, const double d){
+lattice LLL(lattice b, const float d){
     double nu, BB, C, t;
     b = GSO(b);
     
@@ -185,6 +319,105 @@ lattice LLL(lattice b, const double d){
 }
 
 /**
+ * @brief DeepLLL-reduces lattice basis
+ * 
+ * @param b 
+ * @param d 
+ * @return lattice 
+ */
+lattice DeepLLL(lattice b, const float d){
+    b = GSO(b);
+
+	double C;
+	for(int k = 1, j, i, t, l; k < b.nrows;){
+		for(j = k - 1; j >= 0; --j) SizeReduce(b.basis, b.mu, k, j, b.ncols);
+
+		C = dot_int_int(b.basis[k], b.basis[k], b.ncols);
+		for(i = 0; i < k;){
+			if(C >= d * b.B[i]){
+				C -= b.mu[k][i] * b.mu[k][i] * b.B[i];
+				++i;
+			}else{
+                for(l = 0; l < b.ncols; ++l){
+				    t = b.basis[k][l];
+				    for(j = k; j > i; --j) b.basis[j][l] = b.basis[j - 1][l];
+				    b.basis[i][l] = t;
+                }
+                b = GSO(b);
+				k = fmax(i - 1, 0);
+			}
+		}
+		++k;
+	}
+    return b;
+}
+
+
+lattice PotLLL(lattice b, const float d){
+    b = GSO(b);
+
+    double P, P_min, S;
+    long *t = (long *)malloc(b.ncols * sizeof(long));
+    for(int l = 0, j, i, k, h; l < b.nrows;){
+        h = l - 1;
+
+        for(j = h; j > -1; --j) SizeReduce(b.basis, b.mu, l, j, b.ncols);
+
+        P = P_min = 1.0; k = 0;
+        for(j = h; j >= 0; --j){
+            S = 0.0;
+            for(i = j; i < l; ++i) S += b.mu[l][i] * b.mu[l][i] * b.B[i];
+            P *= (b.B[l] + S) / b.B[j];
+            if(P < P_min){k = j; P_min = P;}
+        }
+        
+        if(d > P_min){
+            t = b.basis[l];
+            for(j = l; j > k; --j) b.basis[j] = b.basis[j - 1];
+            b.basis[k] = t;
+
+            b = GSO(b);
+            l = k;
+        }else ++l;
+    }
+    free(t);
+    return b;
+}
+
+lattice BKZ(lattice b, const int beta, const float d, const int lp) {
+    const int n1 = b.nrows - 1;
+    int *v, *w;
+    double *s;
+
+    for (int z = 0, j, t = 0, BKZTour = 0, i, k = 0, h, lk1, l; z < n1;) {
+        if(BKZTour >= lp) break;
+        printf("z = %d\n", z);
+
+        if (k == n1){k = 0; ++BKZTour;} ++k;
+        l = fmin(k + beta - 1, b.nrows); h = fmin(l + 1, b.nrows);
+        lk1 = l - k + 1;
+
+        w = _enumerate(b.mu, b.B, k - 1, l);
+        if (b.B[k - 1] > s[k - 1] && (w != NULL)) {
+            z = 0;
+
+            //v = w * b.block(k - 1, 0, lk1, m);
+
+            // last_nonzeroに入れて
+            // j番目に持ってくる
+            b = _LLL(b, d, 0, h);
+            b = GSO(b);
+        }else{
+            ++z;
+
+            b = _LLL(b, d, 0, h);
+            b = GSO(b);
+        }
+    }
+}
+
+
+/**
  * @brief Enumerates a lattice vector whose squared norm is shorter than ``R``.
  * 
  * @param mu 
@@ -207,19 +440,16 @@ int *ENUM(long double** mu, long double* B, const int n, const double R) {
     sigma = (long double **)malloc(n1 * sizeof(long double *));
     for (i = 0; i < n; ++i){
         r[i] = i;
-        w[i] = v[i] = 0;
-        c[i] = rho[i] = 0;
+        c[i] = rho[i] = w[i] = v[i] = 0;
         sigma[i] = (long double *)malloc(n * sizeof(long double));
         for(j = 0; j < n; ++j) sigma[i][j] = 0;
     }
     v[0] = 1;
-    r[n] = 0;
-    rho[n] = 0;
+    rho[n] = r[n] = 0;
     sigma[n] = (long double *)malloc(n * sizeof(long double));
     for(j = 0; j < n; ++j) sigma[n][j] = 0;
 
     for (int k = 0, last_nonzero = 0; ;) {
-        printf("%d\n", k);
         tmp = c[k] - v[k]; tmp *= tmp;
         rho[k] = rho[k + 1] + tmp * B[k];
         if (rho[k] <= R) {
@@ -232,7 +462,7 @@ int *ENUM(long double** mu, long double* B, const int n, const double R) {
                 for (i = r[k]; i > k; --i) sigma[i][k] = sigma[i + 1][k] + mu[i][k] * v[i];
                 c[k] = -sigma[k + 1][k];
                 v[k] = round(c[k]);
-                w[k] = 1; // 小さいやつが見つかったら、変分を元に戻す
+                w[k] = 1;
             }
         }else{
             ++k;
@@ -255,7 +485,14 @@ int *ENUM(long double** mu, long double* B, const int n, const double R) {
     }
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param mu 
+ * @param B 
+ * @param n 
+ * @return int* 
+ */
 int *enumerate(long double **mu, long double *B, const int n) {
     int i, *enum_v, *pre_enum_v;
     enum_v = (int *)malloc(n * sizeof(int));
