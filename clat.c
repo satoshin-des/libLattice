@@ -209,6 +209,15 @@ void print(lattice b, char* flag){
     }
 }
 
+void all_information(lattice b){
+    printf("nrows = %d, ncols = %d\n", b.nrows, b.ncols);
+    puts("lattice basis matrix(spanned by row vectors) =");
+    for(int i = 0, j; i < b.nrows; ++i){
+        for(j = 0; j < b.ncols; ++j) printf("%ld ", b.basis[i][j]);
+        puts("");
+    }
+}
+
 /**
  * @brief Generates random ```nrows```-dimensional lattice basis.
  * 
@@ -401,7 +410,7 @@ lattice BKZ(lattice b, const int beta, const float d, const int lp) {
 
     for (int z = 0, j, t, BKZTour = 0, i, k = 0, h, lk1, l, m; z < n1;) {
         if(BKZTour >= lp) break;
-        printf("z = %d\n", b.ncols);
+        printf("z = %d\n", z);
 
         if (k == n1){k = 0; ++BKZTour;} ++k;
         l = fmin(k + beta - 1, b.nrows); h = fmin(l + 1, b.nrows);
@@ -437,6 +446,7 @@ lattice BKZ(lattice b, const int beta, const float d, const int lp) {
         }
         free(w);
     }
+    return b;
 }
 
 

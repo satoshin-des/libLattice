@@ -36,6 +36,7 @@ double _enumerate(long double **mu, long double *B, int *v, const int qq, const 
 
 
 void print(lattice b, char* flag);
+void all_information(lattice b);
 lattice random_lattice(int nrows, int ncols);
 int *coef2lat(int* v, lattice b);
 lattice GSO(lattice b);

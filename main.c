@@ -19,7 +19,8 @@ int main(){
     puts("\nDeepLLL-reduced basis");
     //b = DeepLLL(b, 0.99);
     b = BKZ(b, 5, 0.99, 10);
-    printf("%d\n", b.ncols);
-    print(b, "basis");
+    //printf("%d\n", b.ncols);
+    all_information(b);
+    //print(b, "basis");
     return 0;
 }
