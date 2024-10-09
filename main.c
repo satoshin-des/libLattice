@@ -2,7 +2,10 @@
 
 #include "clat.h"
 
+#define RANK 10
+
 int main(){
+    int r;
     lattice b = random_lattice(10, 10);
     puts("random basis");
     print(b, "basis");
@@ -14,7 +17,9 @@ int main(){
     puts("");
 
     puts("\nDeepLLL-reduced basis");
+    //b = DeepLLL(b, 0.99);
     b = BKZ(b, 5, 0.99, 10);
+    printf("%d\n", b.ncols);
     print(b, "basis");
     return 0;
 }

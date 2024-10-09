@@ -13,6 +13,7 @@
 #define CLAT_H
 
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct _lattice {
     int nrows;
@@ -22,6 +23,17 @@ typedef struct _lattice {
     long double *B;
     long double **mu;
 } lattice;
+
+// for sub-routine
+bool isZero(const int* v, const int n);
+double dot_dbl_dbl(long double *x, long double *y, const int n);
+double dot_int_dbl(long *x, long double *y, const int n);
+long dot_int_int(long *x, long *y, const int n);
+void SizeReduce(long **b, long double **mu, const int i, const int j, const int m);
+lattice _LLL(lattice b, const float d, const int start, const int end);
+double _ENUM(long double** mu, long double* B, const double R, int* v, int qq, const int start, const int end);
+double _enumerate(long double **mu, long double *B, int *v, const int qq, const int start, const int end);
+
 
 void print(lattice b, char* flag);
 lattice random_lattice(int nrows, int ncols);

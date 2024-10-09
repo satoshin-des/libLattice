@@ -3,9 +3,15 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "clat.h"
 
+
+bool isZero(const int* v, const int n){
+    for(int i = 0; i < n; ++i) if(v[i] != 0) return false;
+    return true;
+}
 
 /**
  * @brief Computes inner product value of vectors ``x`` and ``y``.
@@ -59,7 +65,7 @@ void SizeReduce(long **b, long double **mu, const int i, const int j, const int 
 
 lattice _LLL(lattice b, const float d, const int start, const int end){
     double nu, BB, C, t;
-    int n = end - start + 1;
+    int n = end - start;
     b = GSO(b);
     
     for(int k = 1, tmp, i, j, h; k < n;){
@@ -87,7 +93,7 @@ lattice _LLL(lattice b, const float d, const int start, const int end){
 }
 
 double _ENUM(long double** mu, long double* B, const double R, int* v, int qq, const int start, const int end) {
-    const int n = end - start + 1;
+    const int n = end - start;
     const int n1 = n + 1;
     int i, j, *r, *w;
     double tmp;
@@ -109,18 +115,12 @@ double _ENUM(long double** mu, long double* B, const double R, int* v, int qq, c
     sigma[n] = (long double *)malloc(n * sizeof(long double));
     for(j = 0; j < n; ++j) sigma[n][j] = 0;
 
-    for (int k = 0, last_nonzero = 0, tt = 0; ;) {
-        ++tt;
-        if(tt >= 100000000){
-            puts("break");
-            free(v); v = NULL;
-            return rho[qq];
-        }
+    for (int k = 0, last_nonzero = 0; ;) {
         tmp = c[k] - v[k]; tmp *= tmp;
         rho[k] = rho[k + 1] + tmp * B[k + start];
         if (rho[k] < R || fabs(rho[k] - R) < 0.001) {
             if (k == 0){
-                free(r); free(w); free(c); free(rho); free(sigma);
+                free(r); free(w); free(c); free(sigma);
                 return rho[qq];
             }else{
                 --k;
@@ -133,8 +133,8 @@ double _ENUM(long double** mu, long double* B, const double R, int* v, int qq, c
         }else{
             ++k;
             if (k == n) {
-                free(r); free(w); free(c); free(rho); free(sigma);
-                free(v); v = NULL;
+                free(r); free(w); free(c); free(sigma);
+                for(i = 0; i < n; ++i) v[i] = 0;
                 return rho[qq];
             }else{
                 r[k] = k;
@@ -160,16 +160,15 @@ double _ENUM(long double** mu, long double* B, const double R, int* v, int qq, c
  * @return int* 
  */
 double _enumerate(long double **mu, long double *B, int *v, const int qq, const int start, const int end) {
-    int i, *enum_v, *pre_enum_v, n = end - start + 1;
+    int i, *enum_v, *pre_enum_v, n = end - start;
     enum_v = (int *)malloc(n * sizeof(int));
     pre_enum_v = (int *)malloc(n * sizeof(int));
     for(i = 0; i < n; ++i) enum_v[i] = pre_enum_v[i] = 0;
-    for (double R = B[start], pre_rho = 0, rho = 0;; R *= 0.99) {
-        printf("R = %lf\n", R);
+    for (double R = B[start], pre_rho = 0, rho = 0;; R *= 0.99){
         for(i = 0; i < n; ++i) pre_enum_v[i] = enum_v[i];
         pre_rho = rho;
         rho = _ENUM(mu, B, R, enum_v, qq, start, end);
-        if (enum_v == NULL){
+        if (isZero(enum_v, n)){
             for(i = 0; i < n; ++i) v[i] = pre_enum_v[i];
             free(pre_enum_v);
             return pre_rho;
@@ -398,9 +397,11 @@ lattice BKZ(lattice b, const int beta, const float d, const int lp) {
     double s;
     v = (int *)malloc(b.ncols * sizeof(int));
 
+    b = LLL(b, d);
+
     for (int z = 0, j, t, BKZTour = 0, i, k = 0, h, lk1, l, m; z < n1;) {
         if(BKZTour >= lp) break;
-        printf("z = %d\n", z);
+        printf("z = %d\n", b.ncols);
 
         if (k == n1){k = 0; ++BKZTour;} ++k;
         l = fmin(k + beta - 1, b.nrows); h = fmin(l + 1, b.nrows);
@@ -408,8 +409,8 @@ lattice BKZ(lattice b, const int beta, const float d, const int lp) {
 
         w = (int *)malloc(lk1 * sizeof(int));
         s = _enumerate(b.mu, b.B, w, k - 1, k - 1, l);
-        puts("a");
-        if (b.B[k - 1] > s && (w != NULL)) {
+
+        if (b.B[k - 1] > s && ! isZero(w, lk1)) {
             z = 0;
 
             for(i = 0; i < b.ncols; ++i){
@@ -434,6 +435,7 @@ lattice BKZ(lattice b, const int beta, const float d, const int lp) {
             b = _LLL(b, d, 0, h);
             b = GSO(b);
         }
+        free(w);
     }
 }
 
