@@ -7,7 +7,14 @@
 
 #include "clat.h"
 
-
+/**
+ * @brief Tests if the vector is zero or not.
+ * 
+ * @param v vector
+ * @param n size of vector
+ * @return true 
+ * @return false 
+ */
 bool isZero(const int* v, const int n){
     for(int i = 0; i < n; ++i) if(v[i] != 0) return false;
     return true;
@@ -18,7 +25,7 @@ bool isZero(const int* v, const int n){
  * 
  * @param x vector
  * @param y vector
- * @param n size of vector
+ * @param n size of vectors
  * @return double 
  */
 double dot_dbl_dbl(long double *x, long double *y, const int n){
@@ -31,7 +38,7 @@ double dot_dbl_dbl(long double *x, long double *y, const int n){
  * 
  * @param x vector
  * @param y vector
- * @param n size of vector
+ * @param n size of vectors
  * @return double 
  */
 double dot_int_dbl(long *x, long double *y, const int n){
@@ -39,10 +46,40 @@ double dot_int_dbl(long *x, long double *y, const int n){
     for(int i = 0; i < n; ++i) s += y[i] * x[i];
     return s;
 }
+/**
+ * @brief Computes inner product value of vectors ``x`` and ``y``.
+ * 
+ * @param x vector
+ * @param y vector
+ * @param n size of vectors
+ * @return long 
+ */
 long dot_int_int(long *x, long *y, const int n){
     long s = 0;
     for(int i = 0; i < n; ++i) s += y[i] * x[i];
     return s;
+}
+
+lattice _GSO(lattice b){
+    int i, j, k;
+    b.mu = (long double **)malloc(b.nrows * sizeof(long double *));
+    b.basis_star = (long double **)malloc(b.nrows * sizeof(long double *));
+    b.B = (long double *)malloc(b.nrows * sizeof(long double));
+    for(i = 0; i < b.nrows; ++i){
+        b.basis_star[i] = (long double *)malloc(b.ncols * sizeof(long double));
+        b.mu[i] = (long double *)malloc(b.nrows * sizeof(long double));
+    }
+
+    for(i = 0; i < b.nrows; ++i){
+        b.mu[i][i] = 1.0;
+        for(j = 0; j < b.nrows; ++j) b.basis_star[i][j] = b.basis[i][j];
+        for(j = 0; j < i; ++j){
+            b.mu[i][j] = dot_int_dbl(b.basis[i], b.basis_star[j], b.ncols) / dot_dbl_dbl(b.basis_star[j], b.basis_star[j], b.ncols);
+            for(k = 0; k < b.ncols; ++k) b.basis_star[i][k] -= b.mu[i][j] * b.basis_star[j][k];
+        }
+        b.B[i] = dot_dbl_dbl(b.basis_star[i], b.basis_star[i], b.ncols);
+    }
+    return b;
 }
 
 /**
@@ -120,8 +157,12 @@ double _ENUM(long double** mu, long double* B, const double R, int* v, int qq, c
         rho[k] = rho[k + 1] + tmp * B[k + start];
         if (rho[k] < R || fabs(rho[k] - R) < 0.001) {
             if (k == 0){
-                free(r); free(w); free(c); free(sigma);
-                return rho[qq];
+                free(r); free(w); free(c);
+                for(i = 0; i < n1; ++i) free(sigma[i]);
+                free(sigma);
+                tmp = rho[qq];
+                free(rho);
+                return tmp;
             }else{
                 --k;
                 r[k] = (r[k] > r[k + 1] ? r[k]: r[k + 1]);
@@ -133,9 +174,13 @@ double _ENUM(long double** mu, long double* B, const double R, int* v, int qq, c
         }else{
             ++k;
             if (k == n) {
-                free(r); free(w); free(c); free(sigma);
+                free(r); free(w); free(c);
+                for(i = 0; i < n1; ++i) free(sigma[i]);
+                free(sigma);
                 for(i = 0; i < n; ++i) v[i] = 0;
-                return rho[qq];
+                tmp = rho[qq];
+                free(rho);
+                return tmp;
             }else{
                 r[k] = k;
                 if (k >= last_nonzero) {
@@ -170,12 +215,11 @@ double _enumerate(long double **mu, long double *B, int *v, const int qq, const 
         rho = _ENUM(mu, B, R, enum_v, qq, start, end);
         if (isZero(enum_v, n)){
             for(i = 0; i < n; ++i) v[i] = pre_enum_v[i];
-            free(pre_enum_v);
+            free(pre_enum_v); free(enum_v);
             return pre_rho;
         }
     }
 }
-
 
 /**
  * @brief Prints lattice information.
@@ -218,6 +262,24 @@ void all_information(lattice b){
     }
 }
 
+lattice Lattice(long** b, const int n, const int m){
+    lattice bb;
+    srand((unsigned int)time(NULL));
+    bb.nrows = n;
+    bb.ncols = m;
+    bb.basis = (long **)malloc(n * sizeof(long *));
+    for(int i = 0, j; i < n; ++i){
+        bb.basis[i] = (long *)malloc(m * sizeof(long));
+        for(j = 0; j < m; ++j) bb.basis[i][j] = b[i][j];
+    }
+    bb = _GSO(bb);
+    if(fabs(vol(bb)) < 0.999){
+        puts("Lattice initialization Error: input matrix is not regular. Please input lattice basis.");
+        exit(1);
+    }
+    return bb;
+}
+
 /**
  * @brief Generates random ```nrows```-dimensional lattice basis.
  * 
@@ -233,12 +295,10 @@ lattice random_lattice(int nrows, int ncols){
     b.basis = (long **)malloc(nrows * sizeof(long *));
     for(int i = 0, j; i < nrows; ++i){
         b.basis[i] = (long *)malloc(ncols * sizeof(long));
-        for(j = 0; j < ncols; ++j){
-            b.basis[i][i] = 1;
-            b.basis[i][0] = rand() % 900 + 100;
-        }
+        b.basis[i][i] = 1;
+        b.basis[i][0] = rand() % 900 + 100;
     }
-    b = GSO(b);
+    b = _GSO(b);
     return b;
 }
 
@@ -266,14 +326,6 @@ int *coef2lat(int* v, lattice b){
  */
 lattice GSO(lattice b){
     int i, j, k;
-    b.mu = (long double **)malloc(b.nrows * sizeof(long double *));
-    b.basis_star = (long double **)malloc(b.nrows * sizeof(long double *));
-    b.B = (long double *)malloc(b.nrows * sizeof(long double));
-    for(i = 0; i < b.nrows; ++i){
-        b.basis_star[i] = (long double *)malloc(b.ncols * sizeof(long double));
-        b.mu[i] = (long double *)malloc(b.nrows * sizeof(long double));
-    }
-
     for(i = 0; i < b.nrows; ++i){
         b.mu[i][i] = 1.0;
         for(j = 0; j < b.nrows; ++j) b.basis_star[i][j] = b.basis[i][j];
@@ -294,13 +346,37 @@ lattice GSO(lattice b){
  */
 long double vol(lattice b){
     long double p = 1.0;
-    b = GSO(b);
     for(int i = 0; i < b.nrows; ++i) p *= b.B[i];
     return sqrt(p);
 }
 
 /**
- * @brief LLL-reduces the lattice basis ``b``.
+ * @brief Computes Lagrange-reduced basis(J.-L. Lagrange 1773).
+ * 
+ * @param b 
+ */
+void Lagrange(lattice b){
+    int q, i;
+    long *v = (long *)malloc(b.ncols * sizeof(long));
+
+    if(dot_int_int(b.basis[0], b.basis[0], b.ncols) > dot_int_int(b.basis[1], b.basis[1], b.ncols))
+        for(i = 0; i < b.ncols; ++i){v[i] = b.basis[0][i]; b.basis[0][i] = b.basis[1][i]; b.basis[1][i] = v[i];}
+
+    do{
+        q = -round((double)dot_int_int(b.basis[0], b.basis[1], b.ncols) / dot_int_int(b.basis[0], b.basis[0], b.ncols));
+        for(i = 0; i < b.ncols; ++i) v[i] = b.basis[1][i] + q * b.basis[0][i];
+        for(i = 0; i < b.ncols; ++i){
+            b.basis[1][i] = b.basis[0][i]; b.basis[0][i] = v[i];
+        }
+    }while(dot_int_int(b.basis[0], b.basis[0], b.ncols) < dot_int_int(b.basis[1], b.basis[1], b.ncols));
+    
+    for(i = 0; i < b.ncols; ++i){
+        v[i] = b.basis[0][i]; b.basis[0][i] = b.basis[1][i]; b.basis[1][i] = v[i];
+    }
+}
+
+/**
+ * @brief LLL-reduces(A. K. Lenstra, H. W. Lenstra, and L. Lovasz 1982) the lattice basis ``b``.
  * 
  * @param b lattice basis
  * @param d reduction parameter
@@ -335,7 +411,7 @@ lattice LLL(lattice b, const float d){
 }
 
 /**
- * @brief DeepLLL-reduces lattice basis
+ * @brief DeepLLL-reduces(C. P. Schnorr and M. Euchner 1994) lattice basis
  * 
  * @param b 
  * @param d 
@@ -368,7 +444,13 @@ lattice DeepLLL(lattice b, const float d){
     return b;
 }
 
-
+/**
+ * @brief PotLLL-reduces(F. Fontein, M. Schneider, and U. Wagner 2018) latttice basis.
+ * 
+ * @param b lattice basis
+ * @param d reduction parameter
+ * @return lattice 
+ */
 lattice PotLLL(lattice b, const float d){
     b = GSO(b);
 
@@ -400,23 +482,31 @@ lattice PotLLL(lattice b, const float d){
     return b;
 }
 
-lattice BKZ(lattice b, const int beta, const float d, const int lp) {
+/**
+ * @brief 
+ * 
+ * @param b 
+ * @param beta 
+ * @param d 
+ * @return lattice 
+ */
+lattice NanchatteBKZ(lattice b, const int beta, const float d) {
     const int n1 = b.nrows - 1;
     int *v, *w;
     double s;
+    w = (int *)malloc(b.nrows * sizeof(int));
     v = (int *)malloc(b.ncols * sizeof(int));
 
     b = LLL(b, d);
 
     for (int z = 0, j, t, BKZTour = 0, i, k = 0, h, lk1, l, m; z < n1;) {
-        if(BKZTour >= lp) break;
-        printf("z = %d\n", z);
+        if(BKZTour >= 10) break;
+        //printf("z = %d\n", z);
 
         if (k == n1){k = 0; ++BKZTour;} ++k;
         l = fmin(k + beta - 1, b.nrows); h = fmin(l + 1, b.nrows);
         lk1 = l - k + 1;
 
-        w = (int *)malloc(lk1 * sizeof(int));
         s = _enumerate(b.mu, b.B, w, k - 1, k - 1, l);
 
         if (b.B[k - 1] > s && ! isZero(w, lk1)) {
@@ -444,11 +534,10 @@ lattice BKZ(lattice b, const int beta, const float d, const int lp) {
             b = _LLL(b, d, 0, h);
             b = GSO(b);
         }
-        free(w);
     }
+    free(v); free(w);
     return b;
 }
-
 
 /**
  * @brief Enumerates a lattice vector whose squared norm is shorter than ``R``.
@@ -459,15 +548,14 @@ lattice BKZ(lattice b, const int beta, const float d, const int lp) {
  * @param R 
  * @return int* 
  */
-int *ENUM(long double** mu, long double* B, const int n, const double R) {
+void ENUM(long double** mu, long double* B, const int n, const double R, int* v) {
     int n1 = n + 1;
-    int i, j, *r, *w, *v;
+    int i, j, *r, *w;
     double tmp;
     long double *c, *rho, **sigma;
 
     r = (int *)malloc(n1 * sizeof(int));
     w = (int *)malloc(n * sizeof(int));
-    v = (int *)malloc(n * sizeof(int));
     c = (long double *)malloc(n * sizeof(long double));
     rho = (long double *)malloc(n1 * sizeof(long double));
     sigma = (long double **)malloc(n1 * sizeof(long double *));
@@ -487,8 +575,10 @@ int *ENUM(long double** mu, long double* B, const int n, const double R) {
         rho[k] = rho[k + 1] + tmp * B[k];
         if (rho[k] <= R) {
             if (k == 0){
-                free(r); free(w); free(c); free(rho); free(sigma);
-                return v;
+                free(r); free(w); free(c); free(rho);
+                for(i = 0; i < n1; ++i) free(sigma[i]);
+                free(sigma);
+                break;
             }else{
                 --k;
                 r[k] = (r[k] > r[k + 1] ? r[k]: r[k + 1]);
@@ -500,9 +590,11 @@ int *ENUM(long double** mu, long double* B, const int n, const double R) {
         }else{
             ++k;
             if (k == n) {
-                free(r); free(w); free(c); free(rho); free(sigma);
-                free(v); v = NULL;
-                return v;
+                free(r); free(w); free(c); free(rho);
+                for(i = 0; i < n1; ++i) free(sigma[i]);
+                free(sigma);
+                for(i = 0; i < n; ++i) v[i] = 0;
+                break;
             }else{
                 r[k] = k;
                 if (k >= last_nonzero) {
@@ -526,17 +618,18 @@ int *ENUM(long double** mu, long double* B, const int n, const double R) {
  * @param n 
  * @return int* 
  */
-int *enumerate(long double **mu, long double *B, const int n) {
+void enumerate(long double **mu, long double *B, const int n, int* v) {
     int i, *enum_v, *pre_enum_v;
     enum_v = (int *)malloc(n * sizeof(int));
     pre_enum_v = (int *)malloc(n * sizeof(int));
     for(i = 0; i < n; ++i) enum_v[i] = pre_enum_v[i] = 0;
     for (double R = B[0];; R *= 0.99) {
         for(i = 0; i < n; ++i) pre_enum_v[i] = enum_v[i];
-        enum_v = ENUM(mu, B, n, R);
-        if (enum_v == NULL){
-            free(enum_v);
-            return pre_enum_v;
+        ENUM(mu, B, n, R, enum_v);
+        if (isZero(enum_v, n)){
+            for(i = 0; i < n; ++i) v[i] = pre_enum_v[i];
+            free(enum_v); free(pre_enum_v);
+            break;
         }
     }
 }
