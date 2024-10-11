@@ -633,3 +633,16 @@ void enumerate(long double **mu, long double *B, const int n, int* v) {
         }
     }
 }
+
+void Babai(lattice b, long double* w, long* v){
+	int i, j;
+    long double *t, c;
+    t = (long double *)malloc(b.ncols * sizeof(long double));
+    for(i = 0; i < b.ncols; ++i) t[i] = w[i];
+
+	for(i = b.nrows - 1; i >= 0; --i){
+		c = round(dot_dbl_dbl(t, b.basis_star[i], b.ncols) / dot_dbl_dbl(b.basis_star[i], b.basis_star[i], b.ncols));
+		for(j = 0; j < b.ncols; ++j) t[j] -= c * b.basis_star[i][j];
+	}
+	for(i = 0; i < b.ncols; ++i) v[i] = w[i] - t[i];
+}

@@ -50,5 +50,6 @@ lattice PotLLL(lattice b, const float d);
 lattice NanchatteBKZ(lattice b, const int beta, const float d);
 void ENUM(long double** mu, long double* B, const int n, const double R, int* v);
 void enumerate(long double **mu, long double *B, const int n, int* v);
+void Babai(lattice b, long double* w, long* v);
 
 #endif
