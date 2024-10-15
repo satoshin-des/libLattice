@@ -351,7 +351,7 @@ long double vol(lattice b){
 }
 
 /**
- * @brief Computes Lagrange-reduced basis(J.-L. Lagrange 1773).
+ * @brief Computes Lagrange(J.-L. Lagrange 1773)-reduced lattice basis
  * 
  * @param b 
  */
@@ -376,7 +376,7 @@ void Lagrange(lattice b){
 }
 
 /**
- * @brief LLL-reduces(A. K. Lenstra, H. W. Lenstra, and L. Lovasz 1982) the lattice basis ``b``.
+ * @brief Computes LLL(A. K. Lenstra, H. W. Lenstra, and L. Lovasz 1982)-reduced lattice basis.
  * 
  * @param b lattice basis
  * @param d reduction parameter
@@ -411,7 +411,7 @@ lattice LLL(lattice b, const float d){
 }
 
 /**
- * @brief DeepLLL-reduces(C. P. Schnorr and M. Euchner 1994) lattice basis
+ * @brief Computes DeepLLL(C. P. Schnorr and M. Euchner 1994)-reduced lattice basis
  * 
  * @param b 
  * @param d 
@@ -445,7 +445,7 @@ lattice DeepLLL(lattice b, const float d){
 }
 
 /**
- * @brief PotLLL-reduces(F. Fontein, M. Schneider, and U. Wagner 2018) latttice basis.
+ * @brief Computes PotLLL(F. Fontein, M. Schneider, and U. Wagner 2018)-reduced latttice basis.
  * 
  * @param b lattice basis
  * @param d reduction parameter
@@ -483,11 +483,11 @@ lattice PotLLL(lattice b, const float d){
 }
 
 /**
- * @brief 
+ * @brief Computes BKZ-like reduced lattice basis. The algorithm in this function is not BKZ algorithm, but it behaves like BKZ algorithm.
  * 
- * @param b 
- * @param beta 
- * @param d 
+ * @param b lattice basis
+ * @param beta block-size
+ * @param d reduction parameter
  * @return lattice 
  */
 lattice NanchatteBKZ(lattice b, const int beta, const float d) {
@@ -542,11 +542,11 @@ lattice NanchatteBKZ(lattice b, const int beta, const float d) {
 /**
  * @brief Enumerates a lattice vector whose squared norm is shorter than ``R``.
  * 
- * @param mu 
- * @param B 
- * @param n 
- * @param R 
- * @return int* 
+ * @param mu GSO-coefficient matrix
+ * @param B squared norms of GSO-vectors
+ * @param n rank of lattice vector
+ * @param R radius of enumeration
+ * @param v integral coefficients vector of the lattice vector whose squared norm is shorter than ``R``
  */
 void ENUM(long double** mu, long double* B, const int n, const double R, int* v) {
     int n1 = n + 1;
@@ -611,12 +611,12 @@ void ENUM(long double** mu, long double* B, const int n, const double R, int* v)
 }
 
 /**
- * @brief 
+ * @brief Enumerates the shortest lattice vectors.
  * 
- * @param mu 
- * @param B 
- * @param n 
- * @return int* 
+ * @param mu GSO-coefficients matrix
+ * @param B squared norms of GSO-vectors
+ * @param n rank of lattice
+ * @param v the shortest lattice vector
  */
 void enumerate(long double **mu, long double *B, const int n, int* v) {
     int i, *enum_v, *pre_enum_v;
@@ -634,6 +634,13 @@ void enumerate(long double **mu, long double *B, const int n, int* v) {
     }
 }
 
+/**
+ * @brief Solves approx-CVP by Babai's nearest plane algorithm.
+ * 
+ * @param b lattice basis
+ * @param w target vector
+ * @param v close vector to ``w``
+ */
 void Babai(lattice b, long double* w, long* v){
 	int i, j;
     long double *t, c;
@@ -645,4 +652,5 @@ void Babai(lattice b, long double* w, long* v){
 		for(j = 0; j < b.ncols; ++j) t[j] -= c * b.basis_star[i][j];
 	}
 	for(i = 0; i < b.ncols; ++i) v[i] = w[i] - t[i];
+    free(t);
 }
