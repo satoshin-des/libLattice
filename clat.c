@@ -324,22 +324,6 @@ int *coef2lat(int* v, lattice b){
 }
 
 /**
- * @brief 
- * 
- * @param v 
- * @param b 
- * @return long* 
- */
-long *Coef2Lat(long* v, lattice b){
-    long *x = (long *)malloc(b.ncols * sizeof(long)), i, j;
-    for(i = 0; i < b.ncols; ++i){
-        x[i] = 0;
-        for(j = 0; j < b.nrows; ++j) x[i] += v[j] * b.basis[j][i];
-    }
-    return x;
-}
-
-/**
  * @brief The function ```GSO``` computes GSO-informations of lattice basis ```b.basis```.
  * 
  * @param b lattice
@@ -369,6 +353,18 @@ long double vol(lattice b){
     long double p = 1.0;
     for(int i = 0; i < b.nrows; ++i) p *= b.B[i];
     return sqrt(p);
+}
+
+/**
+ * @brief Computes the potential of lattice basis
+ * 
+ * @param b lattice basis
+ * @return long double 
+ */
+long double Pot(lattice b){
+    long double p = 1.0;
+    for(int i = 0; i < b.nrows; ++i) p *= pow(b.B[i], b.nrows - i);
+    return p;
 }
 
 /**
