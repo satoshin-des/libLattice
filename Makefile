@@ -6,5 +6,6 @@ libLattice: clat.c
 main: main.c
 	${CC} -o main.exe main.c -L. -lclat -lm
 
+# If you have not installed NTL library(Victor Shoup, https://libntl.org/), please execute the next command and install it.
 NTL:
 	sudo apt-get install -y libntl-dev

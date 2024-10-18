@@ -20,7 +20,7 @@ int main(){
 
     // Computes the shortest vector on the lattive basis
     puts("\nThe shortest vector");
-    enumerate(b.mu, b.B, RANK, v);
+    enumerate_SV(b.mu, b.B, RANK, v);
     int* x = coef2lat(v, b);
     for(int i = 0; i < RANK; ++i) printf("%d ", x[i]);
     puts("");
@@ -53,5 +53,6 @@ int main(){
     puts("\n\nDeference vector");
     for(int i = 0; i < RANK; ++i) printf("%ld ", y[i] - (long)w[i]);
     puts("");
+
     return 0;
 }

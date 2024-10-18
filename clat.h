@@ -26,6 +26,7 @@ typedef struct _lattice {
 
 // for sub-routine
 bool isZero(const int* v, const int n);
+bool IsZero(const long* v, const int n);
 double dot_dbl_dbl(long double *x, long double *y, const int n);
 double dot_int_dbl(long *x, long double *y, const int n);
 long dot_int_int(long *x, long *y, const int n);
@@ -41,6 +42,7 @@ void all_information(lattice b);
 lattice Lattice(long** b, const int n, const int m);
 lattice random_lattice(int nrows, int ncols);
 int *coef2lat(int* v, lattice b);
+long *Coef2Lat(long* v, lattice b);
 lattice GSO(lattice b);
 long double vol(lattice b);
 void Lagrange(lattice b);
@@ -49,7 +51,7 @@ lattice DeepLLL(lattice b, const float d);
 lattice PotLLL(lattice b, const float d);
 lattice NanchatteBKZ(lattice b, const int beta, const float d);
 void ENUM(long double** mu, long double* B, const int n, const double R, int* v);
-void enumerate(long double **mu, long double *B, const int n, int* v);
+void enumerate_SV(long double **mu, long double *B, const int n, int* v);
 void Babai(lattice b, long double* w, long* v);
 
 #endif

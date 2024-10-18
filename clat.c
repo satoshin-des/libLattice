@@ -20,6 +20,11 @@ bool isZero(const int* v, const int n){
     return true;
 }
 
+bool IsZero(const long* v, const int n){
+    for(int i = 0; i < n; ++i) if(v[i] != 0) return false;
+    return true;
+}
+
 /**
  * @brief Computes inner product value of vectors ``x`` and ``y``.
  * 
@@ -311,6 +316,22 @@ lattice random_lattice(int nrows, int ncols){
  */
 int *coef2lat(int* v, lattice b){
     int *x = (int *)malloc(b.ncols * sizeof(int)), i, j;
+    for(i = 0; i < b.ncols; ++i){
+        x[i] = 0;
+        for(j = 0; j < b.nrows; ++j) x[i] += v[j] * b.basis[j][i];
+    }
+    return x;
+}
+
+/**
+ * @brief 
+ * 
+ * @param v 
+ * @param b 
+ * @return long* 
+ */
+long *Coef2Lat(long* v, lattice b){
+    long *x = (long *)malloc(b.ncols * sizeof(long)), i, j;
     for(i = 0; i < b.ncols; ++i){
         x[i] = 0;
         for(j = 0; j < b.nrows; ++j) x[i] += v[j] * b.basis[j][i];
@@ -618,7 +639,7 @@ void ENUM(long double** mu, long double* B, const int n, const double R, int* v)
  * @param n rank of lattice
  * @param v the shortest lattice vector
  */
-void enumerate(long double **mu, long double *B, const int n, int* v) {
+void enumerate_SV(long double **mu, long double *B, const int n, int* v) {
     int i, *enum_v, *pre_enum_v;
     enum_v = (int *)malloc(n * sizeof(int));
     pre_enum_v = (int *)malloc(n * sizeof(int));
