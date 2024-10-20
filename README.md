@@ -106,3 +106,86 @@ $ ./a.out
 By using these function, you can initialize not only lattice basis, but also GSO-information.
 
 #### Lattice Reduction
+By using this library, you can compute Lagrange-reduced, LLL-reduces, deep LLL-reduced, PotLLL-reduced, or "BKZ"-reduced lattice basis. But "BKZ"-reduction algorithm that you can use in this library is not proper BKZ-reduction.
+
+Below is an example of LLL-reduction:
+```C
+#include <stdio.h>
+#include <stdlib.h>
+#include "clat.h"
+
+int main(){
+    // Definition of Lattice
+    long **b = (long **)malloc(10 * sizeof(long *));
+    for(int i = 0, j; i < 10; ++i){
+        b[i] = (long *)malloc(10 * sizeof(long));
+        for(j = 0; j < 10; ++j) b[i][j] = rand() % 100 + 1;
+    }
+
+    lattice c = Lattice(b, 10, 10);
+    print(c, "basis");
+    puts("=======================");
+    LLL(c, 0.99);
+    print(c, "basis");
+    return 0;
+}
+```
+
+```sh
+$ gcc test.c -L. -lclat -lm
+$ ./a.out
+
+84 87 78 16 94 36 87 93 50 22
+63 28 91 60 64 27 41 27 73 37
+12 69 68 30 83 31 63 24 68 36
+30 3 23 59 70 68 94 57 12 43
+30 74 22 20 85 38 99 25 16 71
+14 27 92 81 57 74 63 71 97 82
+6 26 85 28 37 6 47 30 14 58
+25 96 83 46 15 68 35 65 44 51
+88 9 77 79 89 85 4 52 55 100
+33 61 77 69 40 13 27 87 95 40
+=======================
+-51 41 -23 -30 19 4 22 -3 -5 -1
+51 30 22 -9 -4 -34 -17 -29 9 29
+-6 -43 17 -2 -46 -25 -16 6 -54 22
+-29 -24 15 59 -4 -23 18 10 -26 37
+-26 -20 3 -40 -49 45 -12 40 -4 30
+5 18 8 -22 49 8 -73 -23 5 -18
+18 5 -46 -10 2 7 36 1 -52 35
+30 -33 14 -9 24 14 14 -60 -22 -3
+-8 35 6 -23 -25 55 8 -22 -51 11
+-4 3 -62 -16 -48 7 -42 -15 19 16
+```
+
+Below is its checking figures:
+```python
+A = matrix(ZZ, [
+    [84, 87, 78, 16, 94, 36, 87, 93, 50, 22],
+    [63, 28, 91, 60, 64, 27, 41, 27, 73, 37],
+    [12, 69, 68, 30, 83, 31, 63, 24, 68, 36],
+    [30, 3, 23, 59, 70, 68, 94, 57, 12, 43],
+    [30, 74, 22, 20, 85, 38, 99, 25, 16, 71],
+    [14, 27, 92, 81, 57, 74, 63, 71, 97, 82],
+    [6, 26, 85, 28, 37, 6, 47, 30, 14, 58],
+    [25, 96, 83, 46, 15, 68, 35, 65, 44, 51],
+    [88, 9, 77, 79, 89, 85, 4 ,52, 55, 100],
+    [33, 61, 77, 69, 40, 13, 27, 87, 95, 40],
+])
+
+print(A.LLL(0.99))
+```
+
+```sh
+$ sage test.sage
+[-51  41 -23 -30  19   4  22  -3  -5  -1]
+[ 51  30  22  -9  -4 -34 -17 -29   9  29]
+[ -6 -43  17  -2 -46 -25 -16   6 -54  22]
+[-29 -24  15  59  -4 -23  18  10 -26  37]
+[-26 -20   3 -40 -49  45 -12  40  -4  30]
+[  5  18   8 -22  49   8 -73 -23   5 -18]
+[ 18   5 -46 -10   2   7  36   1 -52  35]
+[ 30 -33  14  -9  24  14  14 -60 -22  -3]
+[ -8  35   6 -23 -25  55   8 -22 -51  11]
+[ -4   3 -62 -16 -48   7 -42 -15  19  16]
+```
