@@ -62,7 +62,7 @@ Deference vector
 0 0 -1 0 -1 1 -1 -1 0 0 0 0 -1 0 0 -1 -1 0 -1 0 -1 0 0 -1 0 0 -1 0 0 -1 -1 0 -1 0 0 0 -1 0 0 0 0 -1 0 0 -1 -1 0 0 0 0 0 -1 0 -1 -1 -1 0 -1 0 0
 ```
 
-### How to utilize the applications
+### How to Utilize the Applications
 
 #### Initialization
 
@@ -189,3 +189,10 @@ $ sage test.sage
 [ -8  35   6 -23 -25  55   8 -22 -51  11]
 [ -4   3 -62 -16 -48   7 -42 -15  19  16]
 ```
+
+#### Other Applications
+
+- ``long double vol(lattice b)``: Computes the volume of lattice.
+- ``long double Pot(lattice b)``: Computes the potential of lattice basis.
+- ``void Babai(lattice b, long double* w, long* v)``: Solves approx-CVP with the target ``w``. ``v`` is a solution.
+- ``lattice GSO(lattice b)``: Computes GSO-informations.
